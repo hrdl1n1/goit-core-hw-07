@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from collections import UserDict
 
 class Field:
@@ -14,18 +14,30 @@ class Name(Field):
 class Phone(Field):
     def __init__(self, value):
         # Перевірка правильності формату номеру телефону
-        if not isinstance(value, str) or len(value) != 10 or not value.isdigit():
-            raise ValueError("Номер телефону повинен бути рядком з 10 цифрами")
+        if not self._validate_phone(value):
+            raise ValueError("Номер телефону має містити 10 цифр")
         super().__init__(value)
+
+    def _validate_phone(self, value):
+        return isinstance(value, str) and len(value) == 10 and value.isdigit()
 
 class Birthday(Field):
     def __init__(self, value):
-        try:
-            # Перевірка правильності формату дати народження
-            datetime.strptime(value, "%d.%m.%Y")
-            super().__init__(value)
-        except ValueError:
+        # Перевірка правильності формату дати народження
+        if not self._validate_date(value):
             raise ValueError("Невірний формат дати. Використовуйте ДД.ММ.РРРР")
+        super().__init__(value)
+
+    def _validate_date(self, value):
+        try:
+            datetime.strptime(value, "%d.%m.%Y")
+            return True
+        except ValueError:
+            return False
+
+    def get_date_object(self):
+        # Повертає об'єкт date
+        return datetime.strptime(self.value, "%d.%m.%Y").date()
 
 class Record:
     def __init__(self, name):
@@ -88,7 +100,7 @@ class AddressBook(UserDict):
 
         for record in self.data.values():
             if record.birthday:
-                bday = datetime.strptime(record.birthday.value, '%d.%m.%Y').date()
+                bday = record.birthday.get_date_object()
 
                 # Визначення дати наступного дня народження
                 bday_this_year = bday.replace(year=today.year)

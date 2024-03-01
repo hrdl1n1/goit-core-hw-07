@@ -1,5 +1,4 @@
 from classes import AddressBook, Record
-import re
 from datetime import datetime
 
 def input_error(func):
@@ -21,25 +20,14 @@ def parse_input(user_input):
     cmd = cmd.strip().lower()
     return cmd, args
 
-def validate_date(date_text):
-    """Перевіряє, чи відповідає дата вказаному формату DD.MM.YYYY."""
-    try:
-        datetime.strptime(date_text, '%d.%m.%Y')
-        return True
-    except ValueError:
-        return False
-
-def validate_phone(phone_number):
-    """Перевіряє, чи відповідає номер телефону вказаному формату 10 цифр."""
-    return bool(re.match(r'^\d{10}$', phone_number))
-
 @input_error
-def add_contact(args, book: AddressBook):
+def add_contact(user_input, book: AddressBook):
     """Додає новий контакт або оновлює існуючий."""
+    args = user_input.split()[1:]
     if len(args) < 2:
         raise ValueError("Введіть ім'я та номер телефону, будь ласка.")
     name, phone = args[:2]
-    if not validate_phone(phone):
+    if not phone.isdigit() or len(phone) != 10:
         raise ValueError("Недійсний номер телефону. Введіть 10 цифр без роздільників.")
     record = book.find(name)
     message = "Контакт оновлено."
@@ -51,67 +39,66 @@ def add_contact(args, book: AddressBook):
     return message
 
 @input_error
-def change_contact(args, book: AddressBook):
+def change_contact(user_input, book: AddressBook):
     """Змінює номер телефону контакту."""
+    args = user_input.split()[1:]
     if len(args) < 2:
         raise ValueError("Введіть ім'я та новий номер телефону.")
     name, new_phone = args[:2]
-    if not validate_phone(new_phone):
+    if not new_phone.isdigit() or len(new_phone) != 10:
         raise ValueError("Недійсний номер телефону. Введіть 10 цифр без роздільників.")
-    if book.contact_exists(name):
-        book.change_contact(name, new_phone)
+    if book.find(name):
+        book.find(name).add_phone(new_phone)
         return "Контакт оновлено."
     else:
         return "Контакт не знайдено."
 
 @input_error
-def phone(args, book: AddressBook):
+def phone(user_input, book: AddressBook):
     """Повертає номер телефону за ім'ям контакту."""
-    if len(args) < 1:
-        raise ValueError("Введіть ім'я контакту.")
-    name = args[0]
-    phone = book.get_phone(name)
-    if phone:
-        return f"Номер телефону {name}: {phone}"
+    name = user_input.split()[1]
+    record = book.find(name)
+    if record:
+        return f"Номер телефону {name}: {', '.join(str(phone) for phone in record.phones)}"
     else:
         return "Контакт не знайдено."
 
 @input_error
-def all_contacts(args, book: AddressBook):
+def all_contacts(user_input, book: AddressBook):
     """Повертає всі контакти."""
-    contacts = book.get_all_contacts()
-    if contacts:
-        return "\n".join([f"{contact.name}: {', '.join(contact.phones)}" for contact in contacts])
+    if book.data:
+        return "\n".join([str(record) for record in book.data.values()])
     else:
         return "Немає контактів у книзі."
 
 @input_error
-def add_birthday(args, book: AddressBook):
+def add_birthday(user_input, book: AddressBook):
     """Додає день народження для контакту."""
+    args = user_input.split()[1:]
     if len(args) < 2:
         raise ValueError("Введіть ім'я контакту та дату народження у форматі DD.MM.YYYY.")
     name, birthday = args[:2]
-    if not validate_date(birthday):
-        raise ValueError("Неправильний формат дати. Введіть у форматі DD.MM.YYYY.")
-    book.add_birthday(name, birthday)
-    return f"День народження додано для {name}."
+    record = book.find(name)
+    if record:
+        record.add_birthday(birthday)
+        return f"День народження додано для {name}."
+    else:
+        return "Контакт не знайдено."
 
 @input_error
-def show_birthday(args, book: AddressBook):
+def show_birthday(user_input, book: AddressBook):
     """Показує день народження за ім'ям контакту."""
-    if len(args) < 1:
-        raise ValueError("Введіть ім'я контакту.")
-    name = args[0]
-    birthday = book.get_birthday(name)
-    if birthday:
-        return f"День народження {name}: {birthday}"
+    name = user_input.split()[1]
+    record = book.find(name)
+    if record and record.birthday:
+        return f"День народження {name}: {record.birthday}"
     else:
         return "День народження не знайдено."
 
 @input_error
-def birthdays(args, book: AddressBook):
+def birthdays(user_input, book: AddressBook):
     """Повертає всі наближені дні народження."""
-    return book.upcoming_birthdays()
+    return book.get_upcoming_birthdays()
 
 def main():
     """Основна функція програми."""
@@ -130,31 +117,31 @@ def main():
             print("Як я можу допомогти?")
 
         elif command == "add":
-            result = add_contact(args, book)
+            result = add_contact(user_input, book)
             print(result)
 
         elif command == "change":
-            result = change_contact(args, book)
+            result = change_contact(user_input, book)
             print(result)
 
         elif command == "phone":
-            result = phone(args, book)
+            result = phone(user_input, book)
             print(result)
 
         elif command == "all":
-            result = all_contacts(args, book)
+            result = all_contacts(user_input, book)
             print(result)
 
         elif command == "add-birthday":
-            result = add_birthday(args, book)
+            result = add_birthday(user_input, book)
             print(result)
 
         elif command == "show-birthday":
-            result = show_birthday(args, book)
+            result = show_birthday(user_input, book)
             print(result)
 
         elif command == "birthdays":
-            result = birthdays(args, book)
+            result = birthdays(user_input, book)
             print(result)
 
         else:
