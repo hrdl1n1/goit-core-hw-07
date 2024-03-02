@@ -59,7 +59,7 @@ def phone(user_input, book: AddressBook):
     name = user_input.split()[1]
     record = book.find(name)
     if record:
-        return f"Номер телефону {name}: {', '.join(str(phone) for phone in record.phones)}"
+        return record  # Зміна тут
     else:
         return "Контакт не знайдено."
 
@@ -67,7 +67,7 @@ def phone(user_input, book: AddressBook):
 def all_contacts(user_input, book: AddressBook):
     """Повертає всі контакти."""
     if book.data:
-        return "\n".join([str(record) for record in book.data.values()])
+        return book.data  # Зміна тут
     else:
         return "Немає контактів у книзі."
 
